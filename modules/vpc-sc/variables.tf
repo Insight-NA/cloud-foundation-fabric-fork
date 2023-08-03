@@ -77,8 +77,9 @@ variable "egress_policies" {
     })
     to = object({
       operations = optional(list(object({
-        method_selectors = optional(list(string))
-        service_name     = string
+        method_selectors     = optional(list(string))
+        permission_selectors = optional(list(string))
+        service_name         = string
       })), [])
       resources              = optional(list(string))
       resource_type_external = optional(bool, false)
@@ -90,7 +91,7 @@ variable "egress_policies" {
     condition = alltrue([
       for k, v in var.egress_policies : contains([
         "IDENTITY_TYPE_UNSPECIFIED", "ANY_IDENTITY",
-        "ANY_USER", "ANY_SERVICE_ACCOUNT"
+        "ANY_USER", "ANY_SERVICE_ACCOUNT", ""
       ], v.from.identity_type)
     ])
     error_message = "Invalid `from.identity_type` value in egress policy."
@@ -108,8 +109,9 @@ variable "ingress_policies" {
     })
     to = object({
       operations = optional(list(object({
-        method_selectors = optional(list(string))
-        service_name     = string
+        method_selectors     = optional(list(string))
+        permission_selectors = optional(list(string))
+        service_name         = string
       })), [])
       resources = optional(list(string))
     })

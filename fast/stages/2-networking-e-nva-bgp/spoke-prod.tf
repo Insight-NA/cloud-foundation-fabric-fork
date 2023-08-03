@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,19 +52,9 @@ module "prod-spoke-vpc" {
   delete_default_routes_on_create = true
   psa_config                      = try(var.psa_ranges.prod, null)
   # Set explicit routes for googleapis; send everything else to NVAs
-  routes = {
-    private-googleapis = {
-      dest_range    = "199.36.153.8/30"
-      priority      = 999
-      next_hop_type = "gateway"
-      next_hop      = "default-internet-gateway"
-    }
-    restricted-googleapis = {
-      dest_range    = "199.36.153.4/30"
-      priority      = 999
-      next_hop_type = "gateway"
-      next_hop      = "default-internet-gateway"
-    }
+  create_googleapis_routes = {
+    private    = true
+    restricted = true
   }
 }
 
@@ -82,12 +72,10 @@ module "prod-spoke-firewall" {
 }
 
 module "peering-prod" {
-  source                     = "../../../modules/net-vpc-peering"
-  prefix                     = "prod-peering-0"
-  local_network              = module.prod-spoke-vpc.self_link
-  peer_network               = module.landing-trusted-vpc.self_link
-  export_local_custom_routes = true
-  export_peer_custom_routes  = true
+  source        = "../../../modules/net-vpc-peering"
+  prefix        = "prod-peering-0"
+  local_network = module.prod-spoke-vpc.self_link
+  peer_network  = module.landing-trusted-vpc.self_link
 }
 
 # Create delegated grants for stage3 service accounts

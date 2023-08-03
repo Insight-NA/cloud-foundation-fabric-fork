@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+output "custom_constraint_ids" {
+  description = "Map of CUSTOM_CONSTRAINTS => ID in the organization."
+  value       = { for k, v in google_org_policy_custom_constraint.constraint : k => v.id }
+}
 
 output "custom_role_id" {
   description = "Map of custom role IDs created in the organization."
@@ -42,6 +47,23 @@ output "firewall_policy_id" {
   value       = { for k, v in google_compute_firewall_policy.policy : k => v.id }
 }
 
+output "id" {
+  description = "Fully qualified organization id."
+  value       = var.organization_id
+  depends_on = [
+    google_org_policy_custom_constraint.constraint,
+    google_org_policy_policy.default,
+    google_organization_iam_binding.authoritative,
+    google_organization_iam_custom_role.roles,
+    google_organization_iam_member.additive,
+    google_organization_iam_policy.authoritative,
+    google_tags_tag_key.default,
+    google_tags_tag_key_iam_binding.default,
+    google_tags_tag_value.default,
+    google_tags_tag_value_iam_binding.default,
+  ]
+}
+
 output "network_tag_keys" {
   description = "Tag key resources."
   value = {
@@ -59,16 +81,18 @@ output "network_tag_values" {
   }
 }
 
+# TODO: deprecate in favor of id
+
 output "organization_id" {
   description = "Organization id dependent on module resources."
   value       = var.organization_id
   depends_on = [
-    google_organization_iam_audit_config.config,
+    google_org_policy_custom_constraint.constraint,
+    google_org_policy_policy.default,
     google_organization_iam_binding.authoritative,
     google_organization_iam_custom_role.roles,
     google_organization_iam_member.additive,
     google_organization_iam_policy.authoritative,
-    google_org_policy_policy.default,
     google_tags_tag_key.default,
     google_tags_tag_key_iam_binding.default,
     google_tags_tag_value.default,

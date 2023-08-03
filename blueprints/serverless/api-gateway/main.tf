@@ -62,8 +62,8 @@ module "sa" {
 
 
 module "functions" {
+  source           = "../../../modules/cloud-function-v1"
   for_each         = toset(var.regions)
-  source           = "../../../modules/cloud-function"
   project_id       = module.project.project_id
   name             = "${local.function_name_prefix}-${each.value}"
   bucket_name      = "bkt-${module.project.project_id}-${each.value}"
@@ -102,7 +102,7 @@ module "gateways" {
 }
 
 module "glb" {
-  source     = "../../../modules/net-glb"
+  source     = "../../../modules/net-lb-app-ext"
   project_id = module.project.project_id
   name       = "glb"
   backend_service_configs = {

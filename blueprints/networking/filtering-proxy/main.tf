@@ -98,7 +98,11 @@ module "nat" {
   router_network        = module.vpc.name
   config_source_subnets = "LIST_OF_SUBNETWORKS"
   # 64512/11 = 5864 . 11 is the number of usable IPs in the proxy subnet
-  config_min_ports_per_vm = 5864
+  config_port_allocation = {
+    enable_dynamic_port_allocation      = true
+    enable_endpoint_independent_mapping = false
+    min_ports_per_vm                    = 5864
+  }
   subnetworks = [
     {
       self_link            = module.vpc.subnet_self_links["${var.region}/proxy"]
@@ -110,12 +114,15 @@ module "nat" {
 }
 
 module "private-dns" {
-  source          = "../../../modules/dns"
-  project_id      = module.project-host.project_id
-  type            = "private"
-  name            = "internal"
-  domain          = "internal."
-  client_networks = [module.vpc.self_link]
+  source     = "../../../modules/dns"
+  project_id = module.project-host.project_id
+  name       = "internal"
+  zone_config = {
+    domain = "internal."
+    private = {
+      client_networks = [module.vpc.self_link]
+    }
+  }
   recordsets = {
     "A squid"     = { ttl = 60, records = [local.squid_address] }
     "CNAME proxy" = { ttl = 3600, records = ["squid.internal."] }
@@ -198,7 +205,7 @@ module "squid-mig" {
 
 module "squid-ilb" {
   count         = var.mig ? 1 : 0
-  source        = "../../../modules/net-ilb"
+  source        = "../../../modules/net-lb-int"
   project_id    = module.project-host.project_id
   region        = var.region
   name          = "squid-ilb"

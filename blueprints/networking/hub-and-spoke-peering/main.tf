@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -112,11 +112,13 @@ module "nat-spoke-1" {
 }
 
 module "hub-to-spoke-1-peering" {
-  source                     = "../../../modules/net-vpc-peering"
-  local_network              = module.vpc-hub.self_link
-  peer_network               = module.vpc-spoke-1.self_link
-  export_local_custom_routes = true
-  export_peer_custom_routes  = false
+  source        = "../../../modules/net-vpc-peering"
+  local_network = module.vpc-hub.self_link
+  peer_network  = module.vpc-spoke-1.self_link
+  routes_config = {
+    local = { export = true, import = false }
+    peer  = { export = false, import = true }
+  }
 }
 
 ################################################################################
@@ -159,12 +161,14 @@ module "nat-spoke-2" {
 }
 
 module "hub-to-spoke-2-peering" {
-  source                     = "../../../modules/net-vpc-peering"
-  local_network              = module.vpc-hub.self_link
-  peer_network               = module.vpc-spoke-2.self_link
-  export_local_custom_routes = true
-  export_peer_custom_routes  = false
-  depends_on                 = [module.hub-to-spoke-1-peering]
+  source        = "../../../modules/net-vpc-peering"
+  local_network = module.vpc-hub.self_link
+  peer_network  = module.vpc-spoke-2.self_link
+  routes_config = {
+    local = { export = true, import = false }
+    peer  = { export = false, import = true }
+  }
+  depends_on = [module.hub-to-spoke-1-peering]
 }
 
 ################################################################################
@@ -221,6 +225,7 @@ module "vm-spoke-2" {
   service_account_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   tags                   = ["ssh"]
 }
+
 
 module "service-account-gce" {
   source     = "../../../modules/iam-service-account"
@@ -296,35 +301,85 @@ module "service-account-gke-node" {
 ################################################################################
 
 module "vpn-hub" {
-  source        = "../../../modules/net-vpn-static"
-  project_id    = module.project.project_id
-  region        = var.region
-  network       = module.vpc-hub.name
-  name          = "${var.prefix}-hub"
-  remote_ranges = values(var.private_service_ranges)
+  source     = "../../../modules/net-vpn-ha"
+  project_id = module.project.project_id
+  region     = var.region
+  network    = module.vpc-hub.name
+  name       = "${var.prefix}-hub"
+  peer_gateways = {
+    default = { gcp = module.vpn-spoke-2.self_link }
+  }
+  router_config = {
+    asn = 64516
+    custom_advertise = {
+      all_subnets          = true
+      all_vpc_subnets      = true
+      all_peer_vpc_subnets = true
+      ip_ranges = {
+        "10.0.0.0/8" = "default"
+      }
+    }
+  }
   tunnels = {
-    spoke-2 = {
-      peer_ip           = module.vpn-spoke-2.address
-      shared_secret     = ""
-      traffic_selectors = { local = ["0.0.0.0/0"], remote = null }
+    remote-0 = {
+      bgp_peer = {
+        address = "169.254.1.1"
+        asn     = 64515
+      }
+      bgp_session_range     = "169.254.1.2/30"
+      vpn_gateway_interface = 0
+    }
+    remote-1 = {
+      bgp_peer = {
+        address = "169.254.2.1"
+        asn     = 64515
+      }
+      bgp_session_range     = "169.254.2.2/30"
+      vpn_gateway_interface = 1
     }
   }
 }
 
+
 module "vpn-spoke-2" {
-  source     = "../../../modules/net-vpn-static"
+  source     = "../../../modules/net-vpn-ha"
   project_id = module.project.project_id
   region     = var.region
   network    = module.vpc-spoke-2.name
   name       = "${var.prefix}-spoke-2"
-  # use an aggregate of the remote ranges, so as to be less specific than the
-  # routes exchanged via peering
-  remote_ranges = ["10.0.0.0/8"]
+  router_config = {
+    asn = 64515
+    custom_advertise = {
+      all_subnets          = true
+      all_vpc_subnets      = true
+      all_peer_vpc_subnets = true
+      ip_ranges = {
+        "10.0.0.0/8"                                      = "default"
+        "${var.private_service_ranges.spoke-2-cluster-1}" = "access to control plane"
+      }
+    }
+  }
+  peer_gateways = {
+    default = { gcp = module.vpn-hub.self_link }
+  }
   tunnels = {
-    hub = {
-      peer_ip           = module.vpn-hub.address
-      shared_secret     = module.vpn-hub.random_secret
-      traffic_selectors = { local = ["0.0.0.0/0"], remote = null }
+    remote-0 = {
+      bgp_peer = {
+        address = "169.254.1.2"
+        asn     = 64516
+      }
+      bgp_session_range     = "169.254.1.1/30"
+      shared_secret         = module.vpn-hub.random_secret
+      vpn_gateway_interface = 0
+    }
+    remote-1 = {
+      bgp_peer = {
+        address = "169.254.2.2"
+        asn     = 64516
+      }
+      bgp_session_range     = "169.254.2.1/30"
+      shared_secret         = module.vpn-hub.random_secret
+      vpn_gateway_interface = 1
     }
   }
 }

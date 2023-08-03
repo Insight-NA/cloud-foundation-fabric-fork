@@ -25,10 +25,26 @@ variable "id" {
   type        = string
 }
 
+variable "kms_key_name" {
+  description = "To enable CMEK for a project logging bucket, set this field to a valid name. The associated service account requires cloudkms.cryptoKeyEncrypterDecrypter roles assigned for the key."
+  type        = string
+  default     = null
+}
+
 variable "location" {
   description = "Location of the bucket."
   type        = string
   default     = "global"
+}
+
+variable "log_analytics" {
+  description = "Enable and configure Analytics Log."
+  type = object({
+    enable          = optional(bool, false)
+    dataset_link_id = optional(string)
+  })
+  nullable = false
+  default  = {}
 }
 
 variable "parent" {

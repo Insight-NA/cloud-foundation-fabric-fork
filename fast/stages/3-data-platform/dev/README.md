@@ -62,15 +62,15 @@ The default configuration will implement 3 tags:
 
 Anything that is not tagged is available to all users who have access to the data warehouse.
 
-You can configure your tags and roles associated by configuring the `data_catalog_tags` variable. We suggest useing the "[Best practices for using policy tags in BigQuery](https://cloud.google.com/bigquery/docs/best-practices-policy-tags)" article as a guide to designing your tags structure and access pattern. By default, no groups has access to tagged data.
+You can configure your tags and roles associated by configuring the `data_catalog_tags` variable. We suggest using the "[Best practices for using policy tags in BigQuery](https://cloud.google.com/bigquery/docs/best-practices-policy-tags)" article as a guide to designing your tags structure and access pattern. By default, no groups has access to tagged data.
 
 ### VPC-SC
 
-As is often the case in real-world configurations, [VPC-SC](https://cloud.google.com/vpc-service-controls) is needed to mitigate data exfiltration. VPC-SC can be configured from the [FAST security stage](../../2-security). This step is optional, but highly recomended, and depends on customer policies and security best practices.
+As is often the case in real-world configurations, [VPC-SC](https://cloud.google.com/vpc-service-controls) is needed to mitigate data exfiltration. VPC-SC can be configured from the [FAST security stage](../../2-security). This step is optional, but highly recommended, and depends on customer policies and security best practices.
 
 To configure the use of VPC-SC on the data platform, you have to specify the data platform project numbers on the `vpc_sc_perimeter_projects.dev` variable on [FAST security stage](../../2-security#perimeter-resources).
 
-In the case your Data Warehouse need to handle confidential data and you have the requirement to separate them deeply from other data and IAM is not enough, the suggested configuration is to keep the confidential project in a separate VPC-SC perimeter with the adequate ingress/egress rules needed for the load and tranformation service account. Below you can find an high level diagram describing the configuration.
+In the case your Data Warehouse need to handle confidential data and you have the requirement to separate them deeply from other data and IAM is not enough, the suggested configuration is to keep the confidential project in a separate VPC-SC perimeter with the adequate ingress/egress rules needed for the load and transformation service account. Below you can find an high level diagram describing the configuration.
 
 <p align="center">
   <img src="diagram_vpcsc.png" alt="Data Platform VPC-SC diagram">
@@ -211,7 +211,7 @@ You can find examples in the `[demo](../../../../blueprints/data-solutions/data-
 | [demo_commands](outputs.tf#L47) | Demo commands. |  |  |
 | [gcs_buckets](outputs.tf#L52) | GCS buckets. |  |  |
 | [kms_keys](outputs.tf#L57) | Cloud MKS keys. |  |  |
-| [projects](outputs.tf#L62) | GCP Projects informations. |  |  |
+| [projects](outputs.tf#L62) | GCP Projects information. |  |  |
 | [vpc_network](outputs.tf#L67) | VPC network. |  |  |
 | [vpc_subnet](outputs.tf#L72) | VPC subnetworks. |  |  |
 

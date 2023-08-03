@@ -15,7 +15,7 @@
  */
 
 module "glb" {
-  source              = "../../../../modules/net-glb"
+  source              = "../../../../modules/net-lb-app-ext"
   name                = "glb"
   project_id          = module.apigee_project.project_id
   protocol            = "HTTPS"
@@ -31,7 +31,7 @@ module "glb" {
     neg-0 = {
       psc = {
         region         = var.region
-        target_service = module.apigee.instances["instance-1"].service_attachment
+        target_service = module.apigee.instances[var.region].service_attachment
         network        = module.apigee_vpc.network.self_link
         subnetwork = (
           module.apigee_vpc.subnets_psc["${var.region}/subnet-psc"].self_link

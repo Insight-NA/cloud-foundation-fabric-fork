@@ -90,6 +90,13 @@ variable "custom_role_names" {
   }
 }
 
+variable "custom_roles" {
+  description = "Map of role names => list of permissions to additionally create at the organization level."
+  type        = map(list(string))
+  nullable    = false
+  default     = {}
+}
+
 variable "fast_features" {
   description = "Selective control for top-level FAST features."
   type = object({
@@ -119,7 +126,7 @@ variable "federated_identity_providers" {
 
 variable "groups" {
   # https://cloud.google.com/docs/enterprise/setup-checklist
-  description = "Group names to grant organization-level permissions."
+  description = "Group names or emails to grant organization-level permissions. If just the name is provided, the default organization domain is assumed."
   type        = map(string)
   default = {
     gcp-billing-admins      = "gcp-billing-admins",

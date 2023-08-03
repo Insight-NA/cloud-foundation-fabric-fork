@@ -4,7 +4,7 @@ This module simplifies the creation of a Binary Authorization policy, attestors 
 
 ## Example
 
-### Binary Athorization
+### Binary Authorization
 
 ```hcl
 module "binauthz" {
@@ -73,7 +73,7 @@ module "binauthz" {
 | name | description | sensitive |
 |---|---|:---:|
 | [attestors](outputs.tf#L17) | Attestors. |  |
-| [id](outputs.tf#L25) | Binary Authorization policy ID. |  |
+| [id](outputs.tf#L25) | Fully qualified Binary Authorization policy ID. |  |
 | [notes](outputs.tf#L30) | Notes. |  |
 
 <!-- END TFDOC -->

@@ -16,7 +16,13 @@
 
 locals {
   iam_processing = {
+    "roles/bigquery.jobUser" = [
+      module.processing-sa-cmp-0.iam_email,
+      module.processing-sa-0.iam_email
+    ]
     "roles/composer.admin"                            = [local.groups_iam.data-engineers]
+    "roles/dataflow.admin"                            = [module.processing-sa-cmp-0.iam_email]
+    "roles/dataflow.worker"                           = [module.processing-sa-0.iam_email]
     "roles/composer.environmentAndStorageObjectAdmin" = [local.groups_iam.data-engineers]
     "roles/composer.ServiceAgentV2Ext" = [
       "serviceAccount:${module.processing-project.service_accounts.robots.composer}"
@@ -28,7 +34,7 @@ locals {
       module.processing-sa-cmp-0.iam_email
     ]
     "roles/dataproc.worker" = [
-      module.processing-sa-dp-0.iam_email
+      module.processing-sa-0.iam_email
     ]
     "roles/iam.serviceAccountUser" = [
       module.processing-sa-cmp-0.iam_email, local.groups_iam.data-engineers
@@ -43,16 +49,14 @@ locals {
   }
   processing_subnet = (
     local.use_shared_vpc
-    ? var.network_config.subnet_self_links.processingestration
-    : module.processing-vpc.0.subnet_self_links["${var.region}/${var.prefix}-processing"]
+    ? var.network_config.subnet_self_link
+    : try(module.processing-vpc.0.subnet_self_links["${var.region}/${var.prefix}-processing"], null)
   )
   processing_vpc = (
     local.use_shared_vpc
     ? var.network_config.network_self_link
-    : module.processing-vpc.0.self_link
+    : try(module.processing-vpc.0.self_link, null)
   )
-
-
 }
 
 module "processing-project" {
@@ -78,6 +82,7 @@ module "processing-project" {
     "composer.googleapis.com",
     "compute.googleapis.com",
     "container.googleapis.com",
+    "dataflow.googleapis.com",
     "dataproc.googleapis.com",
     "iam.googleapis.com",
     "servicenetworking.googleapis.com",
@@ -96,13 +101,13 @@ module "processing-project" {
     host_project = var.network_config.host_project
     service_identity_iam = {
       "roles/compute.networkUser" = [
-        "cloudservices", "compute", "container-engine"
+        "cloudservices", "compute", "container-engine", "dataflow", "dataproc"
       ]
       "roles/composer.sharedVpcAgent" = [
         "composer"
       ]
       "roles/container.hostServiceAgentUser" = [
-        "container-egine"
+        "container-engine"
       ]
     }
   }

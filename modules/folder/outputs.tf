@@ -29,10 +29,11 @@ output "folder" {
 }
 
 output "id" {
-  description = "Folder id."
+  description = "Fully qualified folder id."
   value       = local.folder.name
   depends_on = [
     google_folder_iam_binding.authoritative,
+    google_folder_iam_policy.authoritative,
     google_org_policy_policy.default,
   ]
 }

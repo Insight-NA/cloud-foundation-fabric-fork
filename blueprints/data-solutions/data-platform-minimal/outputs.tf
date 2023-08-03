@@ -17,27 +17,30 @@
 output "bigquery-datasets" {
   description = "BigQuery datasets."
   value = {
-    curated = module.cur-bq-0.dataset_id,
+    curated = module.cur-bq-0.dataset_id
+    landing = module.land-bq-0.dataset_id
   }
 }
 
-output "dataproc-hystory-server" {
+output "composer" {
+  description = "Composer variables."
+  value = {
+    air_flow_uri = try(google_composer_environment.processing-cmp-0[0].config.0.airflow_uri, null)
+    dag_bucket   = try(regex("^gs://([^/]*)/dags$", google_composer_environment.processing-cmp-0[0].config[0].dag_gcs_prefix)[0], null)
+  }
+}
+
+output "dataproc-history-server" {
   description = "List of bucket names which have been assigned to the cluster."
-  value = {
-    bucket_names   = module.processing-dp-historyserver.bucket_names
-    http_ports     = module.processing-dp-historyserver.http_ports
-    instance_names = module.processing-dp-historyserver.instance_names
-    name           = module.processing-dp-historyserver.name
-  }
+  value       = one(module.processing-dp-historyserver)
 }
 
-output "gcs-buckets" {
+output "gcs_buckets" {
   description = "GCS buckets."
-  sensitive   = true
   value = {
-    landing-cs-0    = module.land-sa-cs-0,
-    processing-cs-0 = module.processing-cs-0,
-    cur-cs-0        = module.cur-cs-0,
+    curated    = module.cur-cs-0.name
+    landing    = module.land-cs-0.name
+    processing = module.processing-cs-0.name
   }
 }
 
@@ -46,36 +49,38 @@ output "kms_keys" {
   value       = var.service_encryption_keys
 }
 
-output "projects" {
-  description = "GCP Projects informations."
-  value = {
-    project_number = {
-      landing    = module.land-project.number,
-      common     = module.common-project.number,
-      curated    = module.cur-project.number,
-      processing = module.processing-project.number,
-    }
-    project_id = {
-      landing    = module.land-project.project_id,
-      common     = module.common-project.project_id,
-      curated    = module.cur-project.project_id,
-      processing = module.processing-project.project_id,
-    }
-  }
-}
-
-output "vpc_network" {
+output "network" {
   description = "VPC network."
   value = {
-    processing_dataproc = local.processing_vpc
-    processing_composer = local.processing_vpc
+    processing_subnet = local.processing_subnet
+    processing_vpc    = local.processing_vpc
   }
 }
 
-output "vpc_subnet" {
-  description = "VPC subnetworks."
+output "projects" {
+  description = "GCP Projects information."
   value = {
-    processing_dataproc = local.processing_subnet
-    processing_composer = local.processing_subnet
+    project_number = {
+      common     = module.common-project.number
+      curated    = module.cur-project.number
+      landing    = module.land-project.number
+      processing = module.processing-project.number
+    }
+    project_id = {
+      common     = module.common-project.project_id
+      curated    = module.cur-project.project_id
+      landing    = module.land-project.project_id
+      processing = module.processing-project.project_id
+    }
+  }
+}
+
+output "service_accounts" {
+  description = "Service account created."
+  value = {
+    composer   = module.processing-sa-cmp-0.email
+    curated    = module.cur-sa-0.email,
+    landing    = module.land-sa-0.email,
+    processing = module.processing-sa-0.email,
   }
 }

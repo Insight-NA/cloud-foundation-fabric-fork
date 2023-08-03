@@ -22,13 +22,12 @@ locals {
     CURATED_PRJ        = module.cur-project.project_id
     DP_KMS_KEY         = var.service_encryption_keys.compute
     DP_REGION          = var.region
-    GCP_REGION         = var.region
     LAND_PRJ           = module.land-project.project_id
-    LAND_GCS           = module.land-cs-0.name
-    PHS_CLUSTER_NAME   = module.processing-dp-historyserver.name
-    PROCESSING_GCS     = module.processing-cs-0.name
+    LAND_GCS           = module.land-cs-0.url
+    PHS_CLUSTER_NAME   = try(module.processing-dp-historyserver[0].name, "")
+    PROCESSING_GCS     = module.processing-cs-0.url
     PROCESSING_PRJ     = module.processing-project.project_id
-    PROCESSING_SA_DP   = module.processing-sa-dp-0.email
+    PROCESSING_SA      = module.processing-sa-0.email
     PROCESSING_SUBNET  = local.processing_subnet
     PROCESSING_VPC     = local.processing_vpc
   }
@@ -47,7 +46,7 @@ module "processing-sa-cmp-0" {
 }
 
 resource "google_composer_environment" "processing-cmp-0" {
-  count   = var.composer_config.disable_deployment == true ? 0 : 1
+  count   = var.enable_services.composer == true ? 1 : 0
   project = module.processing-project.project_id
   name    = "${var.prefix}-prc-cmp-0"
   region  = var.region
@@ -108,6 +107,15 @@ resource "google_composer_environment" "processing-cmp-0" {
       )
       content {
         kms_key_name = var.service_encryption_keys.composer
+      }
+    }
+    web_server_network_access_control {
+      dynamic "allowed_ip_range" {
+        for_each = var.composer_config.web_server_access_control
+        content {
+          value       = allowed_ip_range.key
+          description = allowed_ip_range.value
+        }
       }
     }
   }

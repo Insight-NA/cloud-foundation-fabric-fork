@@ -1,4 +1,4 @@
-# Apigee X - Northbound GLB with PSC Neg, Southbouth PSC with ILB (L7) and Hybrid NEG
+# Apigee X - Northbound: External Application LB with PSC Neg, Southbouth: PSC with Internal Application LB and Hybrid NEG
 
 The following blueprint shows how to expose an on-prem target backend to clients in the Internet.
 
@@ -6,7 +6,7 @@ The architecture is the one depicted below.
 
 ![Diagram](diagram.png)
 
-To emulate an service deployed on-premise, we have used a managed instance group of instances running Nginx exposed via a regional internalload balancer (L7). The service is accesible through VPN.
+To emulate an service deployed on-premise, we have used a managed instance group of instances running Nginx exposed via a regional internalload balancer (L7). The service is accessible through VPN.
 
 ## Running the blueprint
 
@@ -79,5 +79,5 @@ module "test" {
   onprem_project_id  = "my-onprem-project"
   hostname           = "test.myorg.org"
 }
-# tftest modules=14 resources=73
+# tftest modules=14 resources=77
 ```

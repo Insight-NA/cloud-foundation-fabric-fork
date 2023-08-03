@@ -38,6 +38,8 @@ module "dev-spoke-vpc-serverless" {
     ip_cidr_range = var.serverless_connector_config.dev-primary.ip_cidr_range
     region        = var.regions.primary
   }]
+  # these should be create from the main VPC
+  create_googleapis_routes = null
 }
 
 module "prod-spoke-vpc-serverless" {
@@ -51,6 +53,8 @@ module "prod-spoke-vpc-serverless" {
     ip_cidr_range = var.serverless_connector_config.prod-primary.ip_cidr_range
     region        = var.regions.primary
   }]
+  # these should be create from the main VPC
+  create_googleapis_routes = null
 }
 
 resource "google_vpc_access_connector" "dev-primary" {

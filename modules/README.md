@@ -45,9 +45,12 @@ These modules are used in the examples included in this repository. If you are u
 - [Cloud Endpoints](./endpoints)
 - [DNS](./dns)
 - [DNS Response Policy](./dns-response-policy/)
-- [Global Load Balancer (classic)](./net-glb/)
-- [L4 ILB](./net-ilb)
-- [L7 ILB](./net-ilb-l7)
+- [External Application Load Balancer](./net-lb-app-ext/)
+- [External Passthrough Network Load Balancer](./net-lb-ext)
+- [Internal Application Load Balancer](./net-lb-app-int)
+- [Internal Passthrough Network Load Balancer](./net-lb-int)
+- [Internal Proxy Network Load Balancer](./net-lb-proxy-int)
+- [Internal ]
 - [NAT](./net-cloudnat)
 - [Service Directory](./service-directory)
 - [VPC](./net-vpc)
@@ -70,9 +73,11 @@ These modules are used in the examples included in this repository. If you are u
 
 ## Data
 
+- [AlloyDB instance](./alloydb-instance)
 - [BigQuery dataset](./bigquery-dataset)
 - [Bigtable instance](./bigtable-instance)
-- [Cloud Dataplex](./cloud-dataplex)
+- [Dataplex](./dataplex)
+- [Dataplex DataScan](./dataplex-datascan/)
 - [Cloud SQL instance](./cloudsql-instance)
 - [Data Catalog Policy Tag](./data-catalog-policy-tag)
 - [Datafusion](./datafusion)
@@ -94,8 +99,10 @@ These modules are used in the examples included in this repository. If you are u
 - [KMS](./kms)
 - [SecretManager](./secret-manager)
 - [VPC Service Control](./vpc-sc)
+- [Secure Web Proxy](./net-swp)
 
 ## Serverless
 
-- [Cloud Functions](./cloud-function)
+- [Cloud Functions v1](./cloud-function-v1)
+- [Cloud Functions v2](./cloud-function-v2)
 - [Cloud Run](./cloud-run)

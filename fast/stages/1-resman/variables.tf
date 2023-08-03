@@ -160,7 +160,7 @@ variable "fast_features" {
 variable "groups" {
   # tfdoc:variable:source 0-bootstrap
   # https://cloud.google.com/docs/enterprise/setup-checklist
-  description = "Group names to grant organization-level permissions."
+  description = "Group names or emails to grant organization-level permissions. If just the name is provided, the default organization domain is assumed."
   type = object({
     gcp-devops          = optional(string)
     gcp-network-admins  = optional(string)
@@ -226,19 +226,42 @@ variable "prefix" {
 variable "tag_names" {
   description = "Customized names for resource management tags."
   type = object({
-    context     = string
-    environment = string
-    tenant      = string
+    context      = string
+    environment  = string
+    org-policies = string
+    tenant       = string
   })
   default = {
-    context     = "context"
-    environment = "environment"
-    tenant      = "tenant"
+    context      = "context"
+    environment  = "environment"
+    org-policies = "org-policies"
+    tenant       = "tenant"
   }
   nullable = false
   validation {
     condition     = alltrue([for k, v in var.tag_names : v != null])
     error_message = "Tag names cannot be null."
+  }
+}
+
+variable "tags" {
+  description = "Custome secure tags by key name. The `iam` attribute behaves like the similarly named one at module level."
+  type = map(object({
+    description = optional(string, "Managed by the Terraform organization module.")
+    iam         = optional(map(list(string)), {})
+    values = optional(map(object({
+      description = optional(string, "Managed by the Terraform organization module.")
+      iam         = optional(map(list(string)), {})
+      id          = optional(string)
+    })), {})
+  }))
+  nullable = false
+  default  = {}
+  validation {
+    condition = alltrue([
+      for k, v in var.tags : v != null
+    ])
+    error_message = "Use an empty map instead of null as value."
   }
 }
 
@@ -250,4 +273,31 @@ variable "team_folders" {
     impersonation_groups = list(string)
   }))
   default = null
+}
+
+variable "tenants" {
+  description = "Lightweight tenant definitions."
+  type = map(object({
+    admin_group_email = string
+    descriptive_name  = string
+    billing_account   = optional(string)
+    organization = optional(object({
+      customer_id = string
+      domain      = string
+      id          = number
+    }))
+  }))
+  nullable = false
+  default  = {}
+}
+
+variable "tenants_config" {
+  description = "Lightweight tenants shared configuration. Roles will be assigned to tenant admin group and service accounts."
+  type = object({
+    core_folder_roles   = optional(list(string), [])
+    tenant_folder_roles = optional(list(string), [])
+    top_folder_roles    = optional(list(string), [])
+  })
+  nullable = false
+  default  = {}
 }

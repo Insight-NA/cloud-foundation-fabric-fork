@@ -17,14 +17,14 @@
 variable "composer_config" {
   description = "Cloud Composer config."
   type = object({
-    disable_deployment = optional(bool, false)
-    environment_size   = optional(string, "ENVIRONMENT_SIZE_SMALL")
+    environment_size = optional(string, "ENVIRONMENT_SIZE_SMALL")
     software_config = optional(object({
       airflow_config_overrides = optional(map(string), {})
       pypi_packages            = optional(map(string), {})
       env_variables            = optional(map(string), {})
       image_version            = optional(string, "composer-2-airflow-2")
     }), {})
+    web_server_access_control = optional(map(string), {})
     workloads_config = optional(object({
       scheduler = optional(object({
         cpu        = optional(number, 0.5)
@@ -69,6 +69,15 @@ variable "data_force_destroy" {
   default     = false
 }
 
+variable "enable_services" {
+  description = "Flag to enable or disable services in the Data Platform."
+  type = object({
+    composer                = optional(bool, true)
+    dataproc_history_server = optional(bool, true)
+  })
+  default = {}
+}
+
 variable "groups" {
   description = "User groups."
   type        = map(string)
@@ -90,10 +99,7 @@ variable "network_config" {
   type = object({
     host_project      = optional(string)
     network_self_link = optional(string)
-    subnet_self_links = optional(object({
-      processing_dataproc = string
-      processing_composer = string
-    }), null)
+    subnet_self_link  = optional(string)
     composer_ip_ranges = optional(object({
       connection_subnetwork = optional(string)
       cloud_sql             = optional(string, "10.20.10.0/24")
@@ -101,7 +107,6 @@ variable "network_config" {
       pods_range_name       = optional(string, "pods")
       services_range_name   = optional(string, "services")
     }), {})
-    # web_server_network_access_control = list(string)
   })
   nullable = false
   default  = {}

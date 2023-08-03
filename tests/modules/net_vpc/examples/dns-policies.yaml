@@ -36,7 +36,3 @@ counts:
   google_compute_network: 1
   google_compute_subnetwork: 1
   google_dns_policy: 1
-  modules: 1
-  resources: 3
-
-outputs: {}
