@@ -55,7 +55,9 @@ module "landing-vpc" {
     private    = true
     restricted = true
   }
-  data_folder = "${var.factories_config.data_dir}/subnets/landing"
+  factories_config = {
+    subnets_folder = "${var.factories_config.data_dir}/subnets/landing"
+  }
 }
 
 module "landing-firewall" {
@@ -84,5 +86,4 @@ module "landing-nat-primary" {
   router_create  = true
   router_name    = "prod-nat-${local.region_shortnames[var.regions.primary]}"
   router_network = module.landing-vpc.name
-  router_asn     = 4200001024
 }

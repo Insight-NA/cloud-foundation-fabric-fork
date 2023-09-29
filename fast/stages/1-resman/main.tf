@@ -47,16 +47,31 @@ locals {
       fileexists("${path.module}/templates/workflow-${try(v.type, "")}.yaml")
     )
   }
+  team_cicd_repositories = {
+    for k, v in coalesce(var.team_folders, {}) : k => v
+    if(
+      v != null &&
+      (
+        try(v.cicd.type, null) == "sourcerepo"
+        ||
+        contains(
+          keys(local.identity_providers),
+          coalesce(try(v.cicd.identity_provider, null), ":")
+        )
+      ) &&
+      fileexists("${path.module}/templates/workflow-${try(v.cicd.type, "")}.yaml")
+    )
+  }
   cicd_workflow_var_files = {
     stage_2 = [
       "0-bootstrap.auto.tfvars.json",
       "1-resman.auto.tfvars.json",
-      "globals.auto.tfvars.json"
+      "0-globals.auto.tfvars.json"
     ]
     stage_3 = [
       "0-bootstrap.auto.tfvars.json",
       "1-resman.auto.tfvars.json",
-      "globals.auto.tfvars.json",
+      "0-globals.auto.tfvars.json",
       "2-networking.auto.tfvars.json",
       "2-security.auto.tfvars.json"
     ]

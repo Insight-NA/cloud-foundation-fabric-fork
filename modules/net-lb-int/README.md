@@ -13,7 +13,7 @@ One other issue is a `Provider produced inconsistent final plan` error which is 
 ## Examples
 
 - [Referencing existing MIGs](#referencing-existing-migs)
-- [Externally manages instances](#externally-managed-instances)
+- [Externally managed instances](#externally-managed-instances)
 - [End to end example](#end-to-end-example)
 
 ### Referencing existing MIGs
@@ -22,20 +22,20 @@ This example shows how to reference existing Managed Infrastructure Groups (MIGs
 
 ```hcl
 module "instance_template" {
-  source                 = "./fabric/modules/compute-vm"
-  project_id             = var.project_id
-  create_template        = true
-  name                   = "vm-test"
-  service_account_create = true
-  zone                   = "europe-west1-b"
-
+  source          = "./fabric/modules/compute-vm"
+  project_id      = var.project_id
+  zone            = "europe-west1-b"
+  name            = "vm-test"
+  create_template = true
+  service_account = {
+    auto_create = true
+  }
   network_interfaces = [
     {
       network    = var.vpc.self_link
       subnetwork = var.subnet.self_link
     }
   ]
-
   tags = [
     "http-server"
   ]

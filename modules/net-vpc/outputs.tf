@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-output "bindings" {
-  description = "Subnet IAM bindings."
-  value       = { for k, v in google_compute_subnetwork_iam_binding.binding : k => v }
-}
-
 output "id" {
   description = "Fully qualified network id."
   value       = local.network.id
@@ -29,6 +24,11 @@ output "id" {
     google_compute_shared_vpc_service_project.service_projects,
     google_service_networking_connection.psa_connection
   ]
+}
+
+output "internal_ipv6_range" {
+  description = "ULA range."
+  value       = try(local.network.internal_ipv6_range, null)
 }
 
 output "name" {
@@ -89,6 +89,14 @@ output "subnet_ips" {
   description = "Map of subnet address ranges keyed by name."
   value = {
     for k, v in google_compute_subnetwork.subnetwork : k => v.ip_cidr_range
+  }
+}
+
+output "subnet_ipv6_external_prefixes" {
+  description = "Map of subnet external IPv6 prefixes keyed by name."
+  value = {
+    for k, v in google_compute_subnetwork.subnetwork :
+    k => try(v.external_ipv6_prefix, null)
   }
 }
 

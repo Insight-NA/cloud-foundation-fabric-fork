@@ -28,36 +28,11 @@ variable "custom_roles" {
   nullable    = false
 }
 
-variable "firewall_policies" {
-  description = "Hierarchical firewall policy rules created in the organization."
-  type = map(map(object({
-    action                  = string
-    description             = string
-    direction               = string
-    logging                 = bool
-    ports                   = map(list(string))
-    priority                = number
-    ranges                  = list(string)
-    target_resources        = list(string)
-    target_service_accounts = list(string)
-    # preview                 = bool
-  })))
-  default = {}
-}
-
-variable "firewall_policy_association" {
-  description = "The hierarchical firewall policy to associate to this folder. Must be either a key in the `firewall_policies` map or the id of a policy defined somewhere else."
-  type        = map(string)
-  default     = {}
-  nullable    = false
-}
-
-variable "firewall_policy_factory" {
-  description = "Configuration for the firewall policy factory."
+variable "firewall_policy" {
+  description = "Hierarchical firewall policies to associate to the organization."
   type = object({
-    cidr_file   = string
-    policy_name = string
-    rules_file  = string
+    name   = string
+    policy = string
   })
   default = null
 }
@@ -76,24 +51,34 @@ variable "iam" {
   nullable    = false
 }
 
-variable "iam_additive" {
-  description = "Non authoritative IAM bindings, in {ROLE => [MEMBERS]} format."
-  type        = map(list(string))
-  default     = {}
-  nullable    = false
+variable "iam_bindings" {
+  description = "Authoritative IAM bindings in {KEY => {role = ROLE, members = [], condition = {}}}. Keys are arbitrary."
+  type = map(object({
+    members = list(string)
+    role    = string
+    condition = optional(object({
+      expression  = string
+      title       = string
+      description = optional(string)
+    }))
+  }))
+  nullable = false
+  default  = {}
 }
 
-variable "iam_additive_members" {
-  description = "IAM additive bindings in {MEMBERS => [ROLE]} format. This might break if members are dynamic values."
-  type        = map(list(string))
-  default     = {}
-  nullable    = false
-}
-
-variable "iam_policy" {
-  description = "IAM authoritative policy in {ROLE => [MEMBERS]} format. Roles and members not explicitly listed will be cleared, use with extreme caution."
-  type        = map(list(string))
-  default     = null
+variable "iam_bindings_additive" {
+  description = "Individual additive IAM bindings. Keys are arbitrary."
+  type = map(object({
+    member = string
+    role   = string
+    condition = optional(object({
+      expression  = string
+      title       = string
+      description = optional(string)
+    }))
+  }))
+  nullable = false
+  default  = {}
 }
 
 variable "logging_data_access" {

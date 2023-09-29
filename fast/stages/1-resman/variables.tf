@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ variable "automation" {
     project_number          = string
     federated_identity_pool = string
     federated_identity_providers = map(object({
+      audiences        = list(string)
       issuer           = string
       issuer_uri       = string
       name             = string
@@ -137,12 +138,6 @@ variable "custom_roles" {
   default = null
 }
 
-variable "data_dir" {
-  description = "Relative path for the folder storing configuration data."
-  type        = string
-  default     = "data"
-}
-
 variable "fast_features" {
   # tfdoc:variable:source 0-0-bootstrap
   description = "Selective control for top-level FAST features."
@@ -188,6 +183,18 @@ variable "locations" {
   nullable = false
 }
 
+variable "org_policy_tags" {
+  # tfdoc:variable:source 0-bootstrap
+  description = "Resource management tags for organization policy exceptions."
+  type = object({
+    key_id   = optional(string)
+    key_name = optional(string)
+    values   = optional(map(string), {})
+  })
+  nullable = false
+  default  = {}
+}
+
 variable "organization" {
   # tfdoc:variable:source 0-bootstrap
   description = "Organization details."
@@ -196,14 +203,6 @@ variable "organization" {
     id          = number
     customer_id = string
   })
-}
-
-variable "organization_policy_configs" {
-  description = "Organization policies customization."
-  type = object({
-    allowed_policy_member_domains = list(string)
-  })
-  default = null
 }
 
 variable "outputs_location" {
@@ -226,17 +225,11 @@ variable "prefix" {
 variable "tag_names" {
   description = "Customized names for resource management tags."
   type = object({
-    context      = string
-    environment  = string
-    org-policies = string
-    tenant       = string
+    context     = optional(string, "context")
+    environment = optional(string, "environment")
+    tenant      = optional(string, "tenant")
   })
-  default = {
-    context      = "context"
-    environment  = "environment"
-    org-policies = "org-policies"
-    tenant       = "tenant"
-  }
+  default  = {}
   nullable = false
   validation {
     condition     = alltrue([for k, v in var.tag_names : v != null])
@@ -271,6 +264,12 @@ variable "team_folders" {
     descriptive_name     = string
     group_iam            = map(list(string))
     impersonation_groups = list(string)
+    cicd = optional(object({
+      branch            = string
+      identity_provider = string
+      name              = string
+      type              = string
+    }))
   }))
   default = null
 }

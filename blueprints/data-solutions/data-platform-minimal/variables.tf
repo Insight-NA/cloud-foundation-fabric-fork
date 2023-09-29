@@ -19,10 +19,11 @@ variable "composer_config" {
   type = object({
     environment_size = optional(string, "ENVIRONMENT_SIZE_SMALL")
     software_config = optional(object({
-      airflow_config_overrides = optional(map(string), {})
-      pypi_packages            = optional(map(string), {})
-      env_variables            = optional(map(string), {})
-      image_version            = optional(string, "composer-2-airflow-2")
+      airflow_config_overrides       = optional(map(string), {})
+      pypi_packages                  = optional(map(string), {})
+      env_variables                  = optional(map(string), {})
+      image_version                  = optional(string, "composer-2-airflow-2")
+      cloud_data_lineage_integration = optional(bool, true)
     }), {})
     web_server_access_control = optional(map(string), {})
     workloads_config = optional(object({
@@ -54,12 +55,15 @@ variable "composer_config" {
 
 variable "data_catalog_tags" {
   description = "List of Data Catalog Policy tags to be created with optional IAM binging configuration in {tag => {ROLE => [MEMBERS]}} format."
-  type        = map(map(list(string)))
-  nullable    = false
+  type = map(object({
+    description = optional(string)
+    iam         = optional(map(list(string)), {})
+  }))
+  nullable = false
   default = {
-    "3_Confidential" = null
-    "2_Private"      = null
-    "1_Sensitive"    = null
+    "3_Confidential" = {}
+    "2_Private"      = {}
+    "1_Sensitive"    = {}
   }
 }
 

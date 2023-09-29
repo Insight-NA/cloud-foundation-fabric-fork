@@ -20,6 +20,11 @@ locals {
   cicd_workflows = {
     for k, v in local.cicd_repositories : k => templatefile(
       "${path.module}/templates/workflow-${v.type}.yaml", {
+        # If users give a list of custom audiences we set by default the first element.
+        # If no audiences are given, we set https://iam.googleapis.com/{PROVIDER_NAME}
+        audiences = try(
+          local.cicd_providers[v["identity_provider"]].audiences, ""
+        )
         identity_provider = try(
           local.cicd_providers[v["identity_provider"]].name, ""
         )
@@ -82,6 +87,16 @@ locals {
       project_id        = module.log-export-project.project_id
       project_number    = module.log-export-project.number
       writer_identities = module.organization.sink_writer_identities
+    }
+    org_policy_tags = {
+      key_id = (
+        module.organization.tag_keys[var.org_policies_config.tag_name].id
+      )
+      key_name = var.org_policies_config.tag_name
+      values = {
+        for k, v in module.organization.tag_values :
+        split("/", k)[1] => v.id
+      }
     }
   }
   tfvars_globals = {

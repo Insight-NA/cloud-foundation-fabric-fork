@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,18 @@ module "folder" {
   name          = "Networking"
   folder_create = var.folder_ids.networking == null
   id            = var.folder_ids.networking
-  firewall_policy_factory = {
-    cidr_file   = "${var.factories_config.data_dir}/cidrs.yaml"
-    policy_name = var.factories_config.firewall_policy_name
-    rules_file  = "${var.factories_config.data_dir}/hierarchical-policy-rules.yaml"
-  }
-  firewall_policy_association = {
-    factory-policy = var.factories_config.firewall_policy_name
+  firewall_policy = {
+    name   = "default"
+    policy = module.firewall-policy-default.id
   }
 }
 
+module "firewall-policy-default" {
+  source    = "../../../modules/net-firewall-policy"
+  name      = var.factories_config.firewall_policy_name
+  parent_id = module.folder.id
+  rules_factory_config = {
+    cidr_file_path          = "${var.factories_config.data_dir}/cidrs.yaml"
+    ingress_rules_file_path = "${var.factories_config.data_dir}/hierarchical-ingress-rules.yaml"
+  }
+}

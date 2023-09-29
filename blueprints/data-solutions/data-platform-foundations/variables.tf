@@ -19,54 +19,59 @@ variable "composer_config" {
   type = object({
     disable_deployment = optional(bool)
     environment_size   = optional(string, "ENVIRONMENT_SIZE_SMALL")
-    software_config = optional(object({
-      airflow_config_overrides = optional(any)
-      pypi_packages            = optional(any)
-      env_variables            = optional(map(string))
-      image_version            = string
-      }), {
-      image_version = "composer-2-airflow-2"
-    })
-    workloads_config = optional(object({
-      scheduler = optional(object(
-        {
-          cpu        = number
-          memory_gb  = number
-          storage_gb = number
-          count      = number
-        }
-        ), {
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
-        count      = 1
-      })
-      web_server = optional(object(
-        {
-          cpu        = number
-          memory_gb  = number
-          storage_gb = number
-        }
-        ), {
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
-      })
-      worker = optional(object(
-        {
-          cpu        = number
-          memory_gb  = number
-          storage_gb = number
-          min_count  = number
-          max_count  = number
-        }
-        ), {
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
-        min_count  = 1
-        max_count  = 3
-      })
+    software_config = optional(
+      object({
+        airflow_config_overrides = optional(any)
+        pypi_packages            = optional(any)
+        env_variables            = optional(map(string))
+        image_version            = string
+      }),
+      { image_version = "composer-2-airflow-2" }
+    )
+    workloads_config = optional(
+      object({
+        scheduler = optional(
+          object({
+            cpu        = number
+            memory_gb  = number
+            storage_gb = number
+            count      = number
+          }),
+          {
+            cpu        = 0.5
+            memory_gb  = 1.875
+            storage_gb = 1
+            count      = 1
+          }
+        )
+        web_server = optional(
+          object({
+            cpu        = number
+            memory_gb  = number
+            storage_gb = number
+          }),
+          {
+            cpu        = 0.5
+            memory_gb  = 1.875
+            storage_gb = 1
+          }
+        )
+        worker = optional(
+          object({
+            cpu        = number
+            memory_gb  = number
+            storage_gb = number
+            min_count  = number
+            max_count  = number
+          }),
+          {
+            cpu        = 0.5
+            memory_gb  = 1.875
+            storage_gb = 1
+            min_count  = 1
+            max_count  = 3
+          }
+        )
     }))
   })
   default = {
@@ -99,12 +104,15 @@ variable "composer_config" {
 
 variable "data_catalog_tags" {
   description = "List of Data Catalog Policy tags to be created with optional IAM binging configuration in {tag => {ROLE => [MEMBERS]}} format."
-  type        = map(map(list(string)))
-  nullable    = false
+  type = map(object({
+    description = optional(string)
+    iam         = optional(map(list(string)), {})
+  }))
+  nullable = false
   default = {
-    "3_Confidential" = null
-    "2_Private"      = null
-    "1_Sensitive"    = null
+    "3_Confidential" = {}
+    "2_Private"      = {}
+    "1_Sensitive"    = {}
   }
 }
 

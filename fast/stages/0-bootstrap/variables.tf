@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,15 @@ variable "custom_roles" {
   default     = {}
 }
 
+variable "factories_config" {
+  description = "Configuration for the organization policies factory."
+  type = object({
+    org_policy_data_path = optional(string, "data/org-policies")
+  })
+  nullable = false
+  default  = {}
+}
+
 variable "fast_features" {
   description = "Selective control for top-level FAST features."
   type = object({
@@ -113,15 +122,27 @@ variable "fast_features" {
 variable "federated_identity_providers" {
   description = "Workload Identity Federation pools. The `cicd_repositories` variable references keys here."
   type = map(object({
-    attribute_condition = string
+    attribute_condition = optional(string)
     issuer              = string
-    custom_settings = object({
-      issuer_uri        = string
-      allowed_audiences = list(string)
-    })
+    custom_settings = optional(object({
+      issuer_uri = optional(string)
+      audiences  = optional(list(string), [])
+    }), {})
   }))
   default  = {}
   nullable = false
+  # TODO: fix validation
+  # validation {
+  #   condition     = var.federated_identity_providers.custom_settings == null
+  #   error_message = "Custom settings cannot be null."
+  # }
+}
+
+variable "group_iam" {
+  description = "Organization-level authoritative IAM binding for groups, in {GROUP_EMAIL => [ROLES]} format. Group emails need to be static. Can be used in combination with the `iam` variable."
+  type        = map(list(string))
+  default     = {}
+  nullable    = false
 }
 
 variable "groups" {
@@ -145,30 +166,35 @@ variable "groups" {
 variable "iam" {
   description = "Organization-level custom IAM settings in role => [principal] format."
   type        = map(list(string))
+  nullable    = false
   default     = {}
 }
 
-variable "iam_additive" {
-  description = "Organization-level custom IAM settings in role => [principal] format for non-authoritative bindings."
-  type        = map(list(string))
-  default     = {}
+variable "iam_bindings_additive" {
+  description = "Organization-level custom additive IAM bindings. Keys are arbitrary."
+  type = map(object({
+    member = string
+    role   = string
+    condition = optional(object({
+      expression  = string
+      title       = string
+      description = optional(string)
+    }))
+  }))
+  nullable = false
+  default  = {}
 }
 
 variable "locations" {
   description = "Optional locations for GCS, BigQuery, and logging buckets created here."
   type = object({
-    bq      = string
-    gcs     = string
-    logging = string
-    pubsub  = list(string)
+    bq      = optional(string, "EU")
+    gcs     = optional(string, "EU")
+    logging = optional(string, "global")
+    pubsub  = optional(list(string), [])
   })
-  default = {
-    bq      = "EU"
-    gcs     = "EU"
-    logging = "global"
-    pubsub  = []
-  }
   nullable = false
+  default  = {}
 }
 
 # See https://cloud.google.com/architecture/exporting-stackdriver-logging-for-security-and-access-analytics
@@ -196,6 +222,22 @@ variable "log_sinks" {
     ])
     error_message = "Type must be one of 'bigquery', 'logging', 'pubsub', 'storage'."
   }
+}
+
+variable "org_policies_config" {
+  description = "Organization policies customization."
+  type = object({
+    constraints = optional(object({
+      allowed_policy_member_domains = optional(list(string), [])
+    }), {})
+    tag_name = optional(string, "org-policies")
+    tag_values = optional(map(object({
+      description = optional(string, "Managed by the Terraform organization module.")
+      iam         = optional(map(list(string)), {})
+      id          = optional(string)
+    })), {})
+  })
+  default = {}
 }
 
 variable "organization" {

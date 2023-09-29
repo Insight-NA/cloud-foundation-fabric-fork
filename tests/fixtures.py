@@ -133,6 +133,12 @@ def plan_summary(module_path, basedir, tf_var_files=None, extra_files=None,
     # extract planned outputs
     outputs = plan.get('planned_values', {}).get('outputs', {})
 
+    # force the destruction of the tftest object, otherwise pytest
+    # will complain about unraisable exceptions caused by the context
+    # manager deleting temporary files, including the extra_files that
+    # tftest tries to remove on cleanup
+    del tf
+
     return PlanSummary(values, dict(counts), outputs)
 
 
@@ -148,7 +154,6 @@ def plan_summary_fixture(request):
             **tf_vars):
     if basedir is None:
       basedir = Path(request.fspath).parent
-      print(f"{basedir=}")
     return plan_summary(module_path=module_path, basedir=basedir,
                         tf_var_files=tf_var_files, extra_files=extra_files,
                         **tf_vars)
@@ -168,6 +173,7 @@ def plan_validator(module_path, inventory_paths, basedir, tf_var_files=None,
   for path in inventory_paths:
     # allow tfvars and inventory to be relative to the caller
     path = basedir / path
+    relative_path = path.relative_to(_REPO_ROOT)
     try:
       inventory = yaml.safe_load(path.read_text())
     except (IOError, OSError, yaml.YAMLError) as e:
@@ -183,46 +189,64 @@ def plan_validator(module_path, inventory_paths, basedir, tf_var_files=None,
     #   side of any comparison operators.
     # - include a descriptive error message to the assert
 
-    # for values:
-    # - verify each address in the user's inventory exists in the plan
-    # - for those address that exist on both the user's inventory and
-    #   the plan output, ensure the set of keys on the inventory are a
-    #   subset of the keys in the plan, and compare their values by
-    #   equality
     if 'values' in inventory:
-      expected_values = inventory['values']
-      for address, expected_value in expected_values.items():
-        assert address in summary.values, \
-            f'{address} is not a valid address in the plan'
-        for k, v in expected_value.items():
-          assert k in summary.values[address], \
-              f'{k} not found at {address}'
-          plan_value = summary.values[address][k]
-          assert plan_value == v, \
-              f'{k} at {address} failed. Got `{plan_value}`, expected `{v}`'
+      validate_plan_object(inventory['values'], summary.values, relative_path, "")
 
     if 'counts' in inventory:
       expected_counts = inventory['counts']
       for type_, expected_count in expected_counts.items():
         assert type_ in summary.counts, \
-            f'module does not create any resources of type `{type_}`'
+            f'{relative_path}: module does not create any resources of type `{type_}`'
         plan_count = summary.counts[type_]
         assert plan_count == expected_count, \
-            f'count of {type_} resources failed. Got {plan_count}, expected {expected_count}'
+            f'{relative_path}: count of {type_} resources failed. Got {plan_count}, expected {expected_count}'
 
     if 'outputs' in inventory:
       expected_outputs = inventory['outputs']
       for output_name, expected_output in expected_outputs.items():
         assert output_name in summary.outputs, \
-            f'module does not output `{output_name}`'
+            f'{relative_path}: module does not output `{output_name}`'
         output = summary.outputs[output_name]
         # assert 'value' in output, \
         #   f'output `{output_name}` does not have a value (is it sensitive or dynamic?)'
         plan_output = output.get('value', '__missing__')
         assert plan_output == expected_output, \
-            f'output {output_name} failed. Got `{plan_output}`, expected `{expected_output}`'
+            f'{relative_path}: output {output_name} failed. Got `{plan_output}`, expected `{expected_output}`'
 
   return summary
+
+
+def validate_plan_object(expected_value, plan_value, relative_path, relative_address):
+  """
+  Validate that plan object matches inventory
+
+  1. Verify each address in the user's inventory exists in the plan
+  2. For those address that exist on both the user's inventory and
+     the plan output, ensure the set of keys on the inventory are a
+     subset of the keys in the plan, and compare their values by
+     equality
+  3. For lists, verify that they have the same length and check
+     whether its members are equal (according to this function)
+  """
+  # dictionaries / objects
+  if isinstance(expected_value, dict) and isinstance(plan_value, dict):
+    for k, v in expected_value.items():
+      assert k in plan_value, \
+        f'{relative_path}: {k} is not a valid address in the plan'
+      validate_plan_object(v, plan_value[k], relative_path, f'{relative_address}.{k}')
+
+  # lists
+  elif isinstance(expected_value, list) and isinstance(plan_value, list):
+    assert len(plan_value) == len(expected_value), \
+      f'{relative_path}: {relative_address} has different length. Got {plan_value}, expected {expected_value}'
+
+    for i, (exp, actual) in enumerate(zip(expected_value, plan_value)):
+      validate_plan_object(exp, actual, relative_path, f'{relative_address}[{i}]')
+
+  # all other objects
+  else:
+    assert plan_value == expected_value, \
+      f'{relative_path}: {relative_address} failed. Got `{plan_value}`, expected `{expected_value}`'
 
 
 @pytest.fixture(name='plan_validator')

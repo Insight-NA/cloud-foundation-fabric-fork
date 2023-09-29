@@ -17,33 +17,32 @@
 # tfdoc:file:description Security project, Cloud KMS and Secret Manager resources.
 
 locals {
+  # list of locations with keys
   kms_locations = distinct(flatten([
     for k, v in var.kms_keys : v.locations
   ]))
+  # map { location -> { key_name -> key_details } }
   kms_locations_keys = {
-    for loc in local.kms_locations : loc => {
-      for k, v in var.kms_keys : k => v if contains(v.locations, loc)
+    for loc in local.kms_locations :
+    loc => {
+      for k, v in var.kms_keys :
+      k => v
+      if contains(v.locations, loc)
     }
   }
-
   kms_log_locations = distinct(flatten([
     for k, v in local.kms_log_sink_keys : compact(v.locations)
   ]))
-
-  # Log sink keys
   kms_log_sink_keys = {
     "storage" = {
-      labels          = {}
       locations       = [var.log_locations.storage]
       rotation_period = "7776000s"
     }
     "bq" = {
-      labels          = {}
       locations       = [var.log_locations.bq]
       rotation_period = "7776000s"
     }
     "pubsub" = {
-      labels          = {}
       locations       = [var.log_locations.pubsub]
       rotation_period = "7776000s"
     }
@@ -61,8 +60,12 @@ module "sec-project" {
   name            = var.project_config.project_ids["sec-core"]
   parent          = module.folder.id
   billing_account = var.project_config.billing_account_id
-  project_create  = var.project_config.billing_account_id != null && var.enable_features.encryption
-  prefix          = var.project_config.billing_account_id == null ? null : var.prefix
+  project_create = (
+    var.project_config.billing_account_id != null && var.enable_features.encryption
+  )
+  prefix = (
+    var.project_config.billing_account_id == null ? null : var.prefix
+  )
   group_iam = {
     (local.groups.workload-security) = [
       "roles/editor"
@@ -76,16 +79,16 @@ module "sec-project" {
 }
 
 module "sec-kms" {
-  for_each   = var.enable_features.encryption ? toset(local.kms_locations) : toset([])
+  for_each = (
+    var.enable_features.encryption
+    ? toset(local.kms_locations)
+    : toset([])
+  )
   source     = "../../../modules/kms"
   project_id = module.sec-project[0].project_id
   keyring = {
     location = each.key
     name     = "sec-${each.key}"
-  }
-  # rename to `key_iam` to switch to authoritative bindings
-  key_iam_additive = {
-    for k, v in local.kms_locations_keys[each.key] : k => v.iam
   }
   keys = local.kms_locations_keys[each.key]
 }

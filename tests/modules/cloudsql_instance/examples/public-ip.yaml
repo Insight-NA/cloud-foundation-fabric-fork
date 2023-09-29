@@ -35,12 +35,14 @@ values:
         start_time: '23:00'
         transaction_log_retention_days: 7
       collation: null
+      data_cache_config: []
       database_flags: []
-      deletion_protection_enabled: null
+      deletion_protection_enabled: false
       deny_maintenance_period: []
       disk_autoresize: true
       disk_autoresize_limit: 0
       disk_type: PD_SSD
+      edition: null
       insights_config: []
       ip_configuration:
       - allocated_ip_range: null
@@ -48,6 +50,7 @@ values:
         enable_private_path_for_google_cloud_services: null
         ipv4_enabled: true
         private_network: projects/xxx/global/networks/aaa
+        psc_config: []
         require_ssl: null
       maintenance_window: []
       password_validation_policy: []
@@ -67,18 +70,21 @@ values:
       advanced_machine_features: []
       availability_type: ZONAL
       collation: null
+      data_cache_config: []
       database_flags: []
-      deletion_protection_enabled: null
+      deletion_protection_enabled: false
       deny_maintenance_period: []
       disk_autoresize: true
       disk_autoresize_limit: 0
       disk_type: PD_SSD
+      edition: null
       insights_config: []
       ip_configuration:
       - allocated_ip_range: null
         authorized_networks: []
         enable_private_path_for_google_cloud_services: null
         ipv4_enabled: true
+        psc_config: []
         private_network: projects/xxx/global/networks/aaa
         require_ssl: null
       maintenance_window: []

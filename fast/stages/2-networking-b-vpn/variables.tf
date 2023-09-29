@@ -82,7 +82,7 @@ variable "factories_config" {
   type = object({
     data_dir              = optional(string, "data")
     dns_policy_rules_file = optional(string, "data/dns-policy-rules.yaml")
-    firewall_policy_name  = optional(string, "factory")
+    firewall_policy_name  = optional(string, "net-default")
   })
   default = {
     data_dir = "data"
@@ -139,18 +139,14 @@ variable "psa_ranges" {
   description = "IP ranges used for Private Service Access (CloudSQL, etc.)."
   type = object({
     dev = object({
-      ranges = map(string)
-      routes = object({
-        export = bool
-        import = bool
-      })
+      ranges        = map(string)
+      export_routes = optional(bool, false)
+      import_routes = optional(bool, false)
     })
     prod = object({
-      ranges = map(string)
-      routes = object({
-        export = bool
-        import = bool
-      })
+      ranges        = map(string)
+      export_routes = optional(bool, false)
+      import_routes = optional(bool, false)
     })
   })
   default = null

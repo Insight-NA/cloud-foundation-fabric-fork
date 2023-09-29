@@ -65,6 +65,7 @@ variable "enable_features" {
   description = "Enable cluster-level features. Certain features allow configuration."
   type = object({
     binary_authorization = optional(bool, false)
+    cost_management      = optional(bool, false)
     dns = optional(object({
       provider = optional(string)
       scope    = optional(string)
@@ -79,6 +80,7 @@ variable "enable_features" {
     l4_ilb_subsetting   = optional(bool, false)
     mesh_certificates   = optional(bool)
     pod_security_policy = optional(bool, false)
+    allow_net_admin     = optional(bool, false)
     resource_usage_export = optional(object({
       dataset                              = string
       enable_network_egress_metering       = optional(bool)
@@ -90,9 +92,7 @@ variable "enable_features" {
     }))
     vertical_pod_autoscaling = optional(bool, false)
   })
-  default = {
-
-  }
+  default = {}
 }
 
 variable "issue_client_certificate" {
@@ -108,10 +108,20 @@ variable "labels" {
 }
 
 variable "location" {
-  description = "Autopilot cluster are always regional."
+  description = "Autopilot clusters are always regional."
   type        = string
 }
 
+variable "logging_config" {
+  description = "Logging configuration."
+  type = object({
+    enable_api_server_logs         = optional(bool, false)
+    enable_scheduler_logs          = optional(bool, false)
+    enable_controller_manager_logs = optional(bool, false)
+  })
+  default  = {}
+  nullable = false
+}
 
 variable "maintenance_config" {
   description = "Maintenance window configuration."
@@ -142,6 +152,38 @@ variable "min_master_version" {
   default     = null
 }
 
+variable "monitoring_config" {
+  description = "Monitoring configuration. System metrics collection cannot be disabled. Control plane metrics are optional. Kube state metrics are optional. Google Cloud Managed Service for Prometheus is enabled by default."
+  type = object({
+    # Control plane metrics
+    enable_api_server_metrics         = optional(bool, false)
+    enable_controller_manager_metrics = optional(bool, false)
+    enable_scheduler_metrics          = optional(bool, false)
+    # Kube state metrics. Requires managed Prometheus. Requires provider version >= v4.82.0
+    enable_daemonset_metrics   = optional(bool, false)
+    enable_deployment_metrics  = optional(bool, false)
+    enable_hpa_metrics         = optional(bool, false)
+    enable_pod_metrics         = optional(bool, false)
+    enable_statefulset_metrics = optional(bool, false)
+    enable_storage_metrics     = optional(bool, false)
+    # Google Cloud Managed Service for Prometheus. Autopilot clusters version >= 1.25 must have this on.
+    enable_managed_prometheus = optional(bool, true)
+  })
+  default  = {}
+  nullable = false
+  validation {
+    condition = anytrue([
+      var.monitoring_config.enable_daemonset_metrics,
+      var.monitoring_config.enable_deployment_metrics,
+      var.monitoring_config.enable_hpa_metrics,
+      var.monitoring_config.enable_pod_metrics,
+      var.monitoring_config.enable_statefulset_metrics,
+      var.monitoring_config.enable_storage_metrics,
+    ]) ? var.monitoring_config.enable_managed_prometheus : true
+    error_message = "Kube state metrics collection requires Google Cloud Managed Service for Prometheus to be enabled."
+  }
+}
+
 variable "name" {
   description = "Cluster name."
   type        = string
@@ -169,14 +211,19 @@ variable "private_cluster_config" {
 }
 
 variable "project_id" {
-  description = "Cluster project id."
+  description = "Cluster project ID."
   type        = string
 }
 
 variable "release_channel" {
-  description = "Release channel for GKE upgrades."
+  description = "Release channel for GKE upgrades. Clusters created in the Autopilot mode must use a release channel. Choose between \"RAPID\", \"REGULAR\", and \"STABLE\"."
   type        = string
-  default     = null
+  default     = "REGULAR"
+  nullable    = false
+  validation {
+    condition     = contains(["RAPID", "REGULAR", "STABLE"], var.release_channel)
+    error_message = "Must be one of: RAPID, REGULAR, STABLE."
+  }
 }
 
 variable "service_account" {
@@ -188,7 +235,8 @@ variable "service_account" {
 variable "tags" {
   description = "Network tags applied to nodes."
   type        = list(string)
-  default     = null
+  default     = []
+  nullable    = false
 }
 
 variable "vpc_config" {
@@ -202,9 +250,9 @@ variable "vpc_config" {
       services = string
     }))
     secondary_range_names = optional(object({
-      pods     = string
-      services = string
-    }), { pods = "pods", services = "services" })
+      pods     = optional(string, "pods")
+      services = optional(string, "services")
+    }))
     master_authorized_ranges = optional(map(string))
     stack_type               = optional(string)
   })
