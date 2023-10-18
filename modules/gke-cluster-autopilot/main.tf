@@ -30,16 +30,18 @@ resource "google_container_cluster" "cluster" {
   enable_l4_ilb_subsetting = var.enable_features.l4_ilb_subsetting
   enable_tpu               = var.enable_features.tpu
   initial_node_count       = 1
-
-  enable_autopilot = true
-  allow_net_admin  = var.enable_features.allow_net_admin
+  enable_autopilot         = true
+  allow_net_admin          = var.enable_features.allow_net_admin
+  deletion_protection      = var.deletion_protection
 
   addons_config {
+    # HTTP Load Balancing is required to be enabled in Autopilot clusters
     http_load_balancing {
-      disabled = !var.enable_addons.http_load_balancing
+      disabled = false
     }
+    # Horizontal Pod Autoscaling is required to be enabled in Autopilot clusters
     horizontal_pod_autoscaling {
-      disabled = !var.enable_addons.horizontal_pod_autoscaling
+      disabled = false
     }
     cloudrun_config {
       disabled = !var.enable_addons.cloudrun
@@ -339,11 +341,7 @@ resource "google_compute_network_peering_routes_config" "gke_master" {
   count = (
     try(var.private_cluster_config.peering_config, null) != null ? 1 : 0
   )
-  project = (
-    try(var.private_cluster_config.peering_config, null) == null
-    ? var.project_id
-    : var.private_cluster_config.peering_config.project_id
-  )
+  project = coalesce(var.private_cluster_config.peering_config.project_id, var.project_id)
   peering = try(
     google_container_cluster.cluster.private_cluster_config.0.peering_name,
     null

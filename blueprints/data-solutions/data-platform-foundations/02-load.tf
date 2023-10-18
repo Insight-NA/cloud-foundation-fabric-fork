@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@
 locals {
   load_iam = {
     data_engineers = [
-      "roles/dataflow.admin"
+      "roles/dataflow.admin",
+      "roles/dataflow.developer"
     ]
     robots_dataflow_load = [
       "roles/storage.objectAdmin"
@@ -54,6 +55,7 @@ module "load-project" {
     "cloudkms.googleapis.com",
     "compute.googleapis.com",
     "dataflow.googleapis.com",
+    "datalineage.googleapis.com",
     "dlp.googleapis.com",
     "pubsub.googleapis.com",
     "servicenetworking.googleapis.com",
@@ -96,6 +98,7 @@ module "load-cs-df-0" {
   location       = var.location
   storage_class  = "MULTI_REGIONAL"
   encryption_key = try(local.service_encryption_keys.storage, null)
+  force_destroy  = !var.deletion_protection
 }
 
 module "load-vpc" {

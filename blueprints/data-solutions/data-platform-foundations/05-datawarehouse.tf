@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,12 +19,14 @@ locals {
     data_analysts = [
       "roles/bigquery.dataViewer",
       "roles/bigquery.jobUser",
+      "roles/datacatalog.tagTemplateViewer",
       "roles/datacatalog.viewer",
       "roles/storage.objectViewer"
     ]
     data_engineers = [
       "roles/bigquery.dataViewer",
       "roles/bigquery.jobUser",
+      "roles/datacatalog.tagTemplateViewer",
       "roles/datacatalog.viewer",
       "roles/storage.objectViewer"
     ]
@@ -41,10 +43,13 @@ locals {
     data_engineers = [
       "roles/bigquery.dataViewer",
       "roles/bigquery.jobUser",
+      "roles/datacatalog.tagTemplateViewer",
       "roles/datacatalog.viewer",
       "roles/storage.objectViewer"
     ]
     sa_load = [
+      "roles/bigquery.dataOwner",
+      "roles/bigquery.jobUser",
       "roles/storage.objectCreator"
     ]
     sa_transf_bq = [
@@ -52,9 +57,7 @@ locals {
       "roles/datacatalog.categoryAdmin"
     ]
     sa_transf_df = [
-      "roles/bigquery.dataOwner",
-      "roles/bigquery.dataViewer",
-      "roles/bigquery.jobUser"
+      "roles/bigquery.dataViewer"
     ]
   }
 }
@@ -153,7 +156,7 @@ module "dwh-lnd-cs-0" {
   location       = var.location
   storage_class  = "MULTI_REGIONAL"
   encryption_key = try(local.service_encryption_keys.storage, null)
-  force_destroy  = var.data_force_destroy
+  force_destroy  = !var.deletion_protection
 }
 
 module "dwh-cur-cs-0" {
@@ -164,7 +167,7 @@ module "dwh-cur-cs-0" {
   location       = var.location
   storage_class  = "MULTI_REGIONAL"
   encryption_key = try(local.service_encryption_keys.storage, null)
-  force_destroy  = var.data_force_destroy
+  force_destroy  = !var.deletion_protection
 }
 
 module "dwh-conf-cs-0" {
@@ -175,5 +178,5 @@ module "dwh-conf-cs-0" {
   location       = var.location
   storage_class  = "MULTI_REGIONAL"
   encryption_key = try(local.service_encryption_keys.storage, null)
-  force_destroy  = var.data_force_destroy
+  force_destroy  = !var.deletion_protection
 }

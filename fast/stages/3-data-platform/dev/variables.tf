@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,10 +41,11 @@ variable "composer_config" {
     disable_deployment = optional(bool)
     environment_size   = string
     software_config = object({
-      airflow_config_overrides = optional(any)
-      pypi_packages            = optional(any)
-      env_variables            = optional(map(string))
-      image_version            = string
+      airflow_config_overrides       = optional(any)
+      pypi_packages                  = optional(any)
+      env_variables                  = optional(map(string))
+      image_version                  = string
+      cloud_data_lineage_integration = optional(bool, true)
     })
     workloads_config = object({
       scheduler = object(
@@ -76,7 +77,8 @@ variable "composer_config" {
   default = {
     environment_size = "ENVIRONMENT_SIZE_SMALL"
     software_config = {
-      image_version = "composer-2-airflow-2"
+      image_version                  = "composer-2-airflow-2"
+      cloud_data_lineage_integration = true
     }
     workloads_config = null
   }
@@ -96,10 +98,11 @@ variable "data_catalog_tags" {
   }
 }
 
-variable "data_force_destroy" {
-  description = "Flag to set 'force_destroy' on data services like BigQery or Cloud Storage."
+variable "deletion_protection" {
+  description = "Prevent Terraform from destroying data storage resources (storage buckets, GKE clusters, CloudSQL instances) in this blueprint. When this field is set in Terraform state, a terraform destroy or terraform apply that would delete data storage resources will fail."
   type        = bool
-  default     = false
+  default     = true
+  nullable    = false
 }
 
 variable "folder_ids" {
@@ -110,8 +113,8 @@ variable "folder_ids" {
   })
 }
 
-variable "groups" {
-  description = "Groups."
+variable "groups-dp" {
+  description = "Data Platform groups."
   type        = map(string)
   default = {
     data-analysts  = "gcp-data-analysts"
@@ -185,6 +188,12 @@ variable "project_services" {
     "serviceusage.googleapis.com",
     "stackdriver.googleapis.com"
   ]
+}
+
+variable "project_suffix" {
+  description = "Suffix used only for project ids."
+  type        = string
+  default     = null
 }
 
 variable "region" {
