@@ -127,6 +127,7 @@ variable "federated_identity_providers" {
     custom_settings = optional(object({
       issuer_uri = optional(string)
       audiences  = optional(list(string), [])
+      jwks_json  = optional(string)
     }), {})
   }))
   default  = {}
@@ -207,7 +208,7 @@ variable "log_sinks" {
   }))
   default = {
     audit-logs = {
-      filter = "logName:\"/logs/cloudaudit.googleapis.com%2Factivity\" OR logName:\"/logs/cloudaudit.googleapis.com%2Fsystem_event\""
+      filter = "logName:\"/logs/cloudaudit.googleapis.com%2Factivity\" OR logName:\"/logs/cloudaudit.googleapis.com%2Fsystem_event\" OR protoPayload.metadata.@type=\"type.googleapis.com/google.cloud.audit.TransparencyLog\""
       type   = "logging"
     }
     vpc-sc = {
