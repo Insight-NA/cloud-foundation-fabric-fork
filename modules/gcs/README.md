@@ -5,27 +5,55 @@
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
-  prefix     = "test"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   versioning = true
   labels = {
     cost-center = "devops"
   }
 }
-# tftest modules=1 resources=1 inventory=simple.yaml
+# tftest modules=1 resources=1 inventory=simple.yaml e2e
 ```
 
 ### Example with Cloud KMS
 
 ```hcl
+module "project" {
+  source         = "./fabric/modules/project"
+  name           = var.project_id
+  project_create = false
+}
+
+module "kms" {
+  source     = "./fabric/modules/kms"
+  project_id = var.project_id
+  keyring = {
+    location = "europe" # location of the KMS must match location of the bucket
+    name     = "test"
+  }
+  keys = {
+    bucket_key = {
+      iam_bindings = {
+        bucket_key_iam = {
+          members = ["serviceAccount:${module.project.service_accounts.robots.storage}"]
+          role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+        }
+      }
+    }
+  }
+}
+
 module "bucket" {
   source         = "./fabric/modules/gcs"
-  project_id     = "myproject"
+  project_id     = var.project_id
+  prefix         = var.prefix
   name           = "my-bucket"
-  encryption_key = "my-encryption-key"
+  encryption_key = module.kms.keys.bucket_key.id
+  location       = "EU"
 }
-# tftest modules=1 resources=1 inventory=cmek.yaml
+
+# tftest skip e2e
 ```
 
 ### Example with retention policy and logging
@@ -33,7 +61,8 @@ module "bucket" {
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   retention_policy = {
     retention_period = 100
@@ -52,7 +81,8 @@ module "bucket" {
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   lifecycle_rules = {
     lr-0 = {
@@ -66,26 +96,33 @@ module "bucket" {
     }
   }
 }
-# tftest modules=1 resources=1 inventory=lifecycle.yaml
+# tftest modules=1 resources=1 inventory=lifecycle.yaml e2e
 ```
 
 ### Minimal example with GCS notifications
 
 ```hcl
+module "project" {
+  source         = "./fabric/modules/project"
+  name           = var.project_id
+  project_create = false
+}
+
 module "bucket-gcs-notification" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   notification_config = {
     enabled           = true
     payload_format    = "JSON_API_V1"
-    sa_email          = "service-<project-number>@gs-project-accounts.iam.gserviceaccount.com" # GCS SA email must be passed or fetched from projects module.
+    sa_email          = module.project.service_accounts.robots.storage
     topic_name        = "gcs-notification-topic"
     event_types       = ["OBJECT_FINALIZE"]
     custom_attributes = {}
   }
 }
-# tftest modules=1 resources=4 inventory=notification.yaml
+# tftest skip e2e
 ```
 
 ### Example with object upload
@@ -93,17 +130,18 @@ module "bucket-gcs-notification" {
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   objects_to_upload = {
     sample-data = {
       name         = "example-file.csv"
-      source       = "data/example-file.csv"
+      source       = "assets/example-file.csv"
       content_type = "text/csv"
     }
   }
 }
-# tftest modules=1 resources=2 inventory=object-upload.yaml
+# tftest modules=1 resources=2 inventory=object-upload.yaml e2e
 ```
 
 ### Examples of IAM
@@ -111,24 +149,26 @@ module "bucket" {
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   iam = {
-    "roles/storage.admin" = ["group:storage@example.com"]
+    "roles/storage.admin" = ["group:${var.group_email}"]
   }
 }
-# tftest modules=1 resources=2 inventory=iam-authoritative.yaml
+# tftest modules=1 resources=2 inventory=iam-authoritative.yaml e2e
 ```
 
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   iam_bindings = {
     storage-admin-with-delegated_roles = {
       role    = "roles/storage.admin"
-      members = ["group:storage@example.com"]
+      members = ["group:${var.group_email}"]
       condition = {
         title = "delegated-role-grants"
         expression = format(
@@ -144,18 +184,19 @@ module "bucket" {
     }
   }
 }
-# tftest modules=1 resources=2 inventory=iam-bindings.yaml
+# tftest modules=1 resources=2 inventory=iam-bindings.yaml e2e
 ```
 
 ```hcl
 module "bucket" {
   source     = "./fabric/modules/gcs"
-  project_id = "myproject"
+  project_id = var.project_id
+  prefix     = var.prefix
   name       = "my-bucket"
   iam_bindings_additive = {
     storage-admin-with-delegated_roles = {
       role   = "roles/storage.admin"
-      member = "group:storage@example.com"
+      member = "group:${var.group_email}"
       condition = {
         title = "delegated-role-grants"
         expression = format(
@@ -171,7 +212,7 @@ module "bucket" {
     }
   }
 }
-# tftest modules=1 resources=2 inventory=iam-bindings-additive.yaml
+# tftest modules=1 resources=2 inventory=iam-bindings-additive.yaml e2e
 ```
 <!-- BEGIN TFDOC -->
 ## Variables
@@ -196,12 +237,13 @@ module "bucket" {
 | [notification_config](variables.tf#L169) | GCS Notification configuration. | <code title="object&#40;&#123;&#10;  enabled            &#61; bool&#10;  payload_format     &#61; string&#10;  topic_name         &#61; string&#10;  sa_email           &#61; string&#10;  event_types        &#61; optional&#40;list&#40;string&#41;&#41;&#10;  custom_attributes  &#61; optional&#40;map&#40;string&#41;&#41;&#10;  object_name_prefix &#61; optional&#40;string&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
 | [objects_to_upload](variables.tf#L183) | Objects to be uploaded to bucket. | <code title="map&#40;object&#40;&#123;&#10;  name                &#61; string&#10;  metadata            &#61; optional&#40;map&#40;string&#41;&#41;&#10;  content             &#61; optional&#40;string&#41;&#10;  source              &#61; optional&#40;string&#41;&#10;  cache_control       &#61; optional&#40;string&#41;&#10;  content_disposition &#61; optional&#40;string&#41;&#10;  content_encoding    &#61; optional&#40;string&#41;&#10;  content_language    &#61; optional&#40;string&#41;&#10;  content_type        &#61; optional&#40;string&#41;&#10;  event_based_hold    &#61; optional&#40;bool&#41;&#10;  temporary_hold      &#61; optional&#40;bool&#41;&#10;  detect_md5hash      &#61; optional&#40;string&#41;&#10;  storage_class       &#61; optional&#40;string&#41;&#10;  kms_key_name        &#61; optional&#40;string&#41;&#10;  customer_encryption &#61; optional&#40;object&#40;&#123;&#10;    encryption_algorithm &#61; optional&#40;string&#41;&#10;    encryption_key       &#61; string&#10;  &#125;&#41;&#41;&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |
 | [prefix](variables.tf#L209) | Optional prefix used to generate the bucket name. | <code>string</code> |  | <code>null</code> |
-| [requester_pays](variables.tf#L224) | Enables Requester Pays on a storage bucket. | <code>bool</code> |  | <code>null</code> |
-| [retention_policy](variables.tf#L230) | Bucket retention policy. | <code title="object&#40;&#123;&#10;  retention_period &#61; number&#10;  is_locked        &#61; optional&#40;bool&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
-| [storage_class](variables.tf#L239) | Bucket storage class. | <code>string</code> |  | <code>&#34;MULTI_REGIONAL&#34;</code> |
-| [uniform_bucket_level_access](variables.tf#L249) | Allow using object ACLs (false) or not (true, this is the recommended behavior) , defaults to true (which is the recommended practice, but not the behavior of storage API). | <code>bool</code> |  | <code>true</code> |
-| [versioning](variables.tf#L255) | Enable versioning, defaults to false. | <code>bool</code> |  | <code>false</code> |
-| [website](variables.tf#L261) | Bucket website. | <code title="object&#40;&#123;&#10;  main_page_suffix &#61; optional&#40;string&#41;&#10;  not_found_page   &#61; optional&#40;string&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
+| [public_access_prevention](variables.tf#L224) | Prevents public access to a bucket. Acceptable values are inherited or enforced. If inherited, the bucket uses public access prevention, only if the bucket is subject to the public access prevention organization policy constraint. | <code>string</code> |  | <code>null</code> |
+| [requester_pays](variables.tf#L230) | Enables Requester Pays on a storage bucket. | <code>bool</code> |  | <code>null</code> |
+| [retention_policy](variables.tf#L236) | Bucket retention policy. | <code title="object&#40;&#123;&#10;  retention_period &#61; number&#10;  is_locked        &#61; optional&#40;bool&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
+| [storage_class](variables.tf#L245) | Bucket storage class. | <code>string</code> |  | <code>&#34;MULTI_REGIONAL&#34;</code> |
+| [uniform_bucket_level_access](variables.tf#L255) | Allow using object ACLs (false) or not (true, this is the recommended behavior) , defaults to true (which is the recommended practice, but not the behavior of storage API). | <code>bool</code> |  | <code>true</code> |
+| [versioning](variables.tf#L261) | Enable versioning, defaults to false. | <code>bool</code> |  | <code>false</code> |
+| [website](variables.tf#L267) | Bucket website. | <code title="object&#40;&#123;&#10;  main_page_suffix &#61; optional&#40;string&#41;&#10;  not_found_page   &#61; optional&#40;string&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |
 
 ## Outputs
 
