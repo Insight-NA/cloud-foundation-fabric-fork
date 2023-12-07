@@ -50,10 +50,10 @@ variable "cluster_autoscaling" {
         auto_repair  = optional(bool, true)
         auto_upgrade = optional(bool, true)
       }))
-      shielded_instance_config = object({
+      shielded_instance_config = optional(object({
         integrity_monitoring = optional(bool, true)
         secure_boot          = optional(bool, false)
-      })
+      }))
     }))
     cpu_limits = optional(object({
       min = number
@@ -135,6 +135,7 @@ variable "enable_features" {
     fqdn_network_policy  = optional(bool, false)
     gateway_api          = optional(bool, false)
     groups_for_rbac      = optional(string)
+    image_streaming      = optional(bool, false)
     intranode_visibility = optional(bool, false)
     l4_ilb_subsetting    = optional(bool, false)
     mesh_certificates    = optional(bool)
@@ -291,6 +292,16 @@ variable "name" {
   type        = string
 }
 
+variable "node_config" {
+  description = "Node-level configuration."
+  type = object({
+    boot_disk_kms_key = optional(string)
+    service_account   = optional(string)
+    tags              = optional(list(string))
+  })
+  default = {}
+}
+
 variable "node_locations" {
   description = "Zones in which the cluster's nodes are located."
   type        = list(string)
@@ -320,18 +331,6 @@ variable "project_id" {
 variable "release_channel" {
   description = "Release channel for GKE upgrades."
   type        = string
-  default     = null
-}
-
-variable "service_account" {
-  description = "Service account used for the default node pool, only useful if the default GCE service account has been disabled."
-  type        = string
-  default     = null
-}
-
-variable "tags" {
-  description = "Network tags applied to nodes."
-  type        = list(string)
   default     = null
 }
 
