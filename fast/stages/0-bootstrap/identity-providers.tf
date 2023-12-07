@@ -60,6 +60,15 @@ locals {
       principal_tpl    = "principalSet://iam.googleapis.com/%s/attribute.sub/project_path:%s:ref_type:branch:ref:%s"
       principalset_tpl = "principalSet://iam.googleapis.com/%s/attribute.repository/%s"
     }
+
+    azure-devops = {
+      attribute_mapping = {
+        "google.subject" = "assertion.sub"
+      }
+      issuer_uri       = "https://sts.windows.net/"
+      principal_tpl    = "principal://iam.googleapis.com/%s/subject/%s"
+      principalset_tpl = "principalSet://iam.googleapis.com/%s/assertion.sub/%s"
+    }
   }
 }
 
